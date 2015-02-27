@@ -20,6 +20,7 @@ using System.Linq;
 using System.Text;
 using System.Web.UI;
 using System.Web.UI.WebControls;
+using Rock.Model;
 
 namespace Rock.Web.UI.Controls
 {
@@ -49,20 +50,10 @@ namespace Rock.Web.UI.Controls
             if ( rockBlock != null )
             {
                 string keyPrefix = string.Format( "grid-filter-{0}-", rockBlock.BlockId );
-
-                foreach ( var userPreference in rockBlock.GetUserPreferences( keyPrefix ) )
+                
+                foreach ( var userPreference in rockBlock.GetUserPreferenceList( keyPrefix ))
                 {
-                    var blockKey = userPreference.Key.Replace( keyPrefix, string.Empty );
-                    var keyName = blockKey.Split( new char[] {'|'}, StringSplitOptions.RemoveEmptyEntries );
-                    if ( blockKey.Contains("|") && keyName.Length == 2 )
-                    {
-                        // only load userPreferences that are stored in the {key}|{name} format
-                        // and make sure there isn't more than one with the same key
-                        if ( !_userPreferences.Any( a => a.Key == keyName[0] ) )
-                        {
-                            _userPreferences.Add( new UserPreference( keyName[0], keyName[1], userPreference.Value ) );
-                        }
-                    }
+                    _userPreferences.Add( new UserPreference( userPreference.Key.Replace( keyPrefix, string.Empty ), userPreference.Name, userPreference.Value ) );
                 }
             }
         }
@@ -338,7 +329,7 @@ namespace Rock.Web.UI.Controls
 
                 foreach ( var userPreference in _userPreferences )
                 {
-                    rockBlock.SetUserPreference( string.Format( "{0}{1}|{2}", keyPrefix, userPreference.Key, userPreference.Name ), userPreference.Value );
+                    rockBlock.SetUserPreference( string.Format( "{0}{1}", keyPrefix, userPreference.Key), userPreference.Name, userPreference.Value );
                 }
             }
         }
@@ -408,47 +399,6 @@ namespace Rock.Web.UI.Controls
             }
         }
 
-        /// <summary>
-        /// Helper class for user preferences
-        /// </summary>
-        public class UserPreference
-        {
-            /// <summary>
-            /// Gets or sets the key.
-            /// </summary>
-            /// <value>
-            /// The key.
-            /// </value>
-            public string Key { get; set; }
-
-            /// <summary>
-            /// Gets or sets the name.
-            /// </summary>
-            /// <value>
-            /// The name.
-            /// </value>
-            public string Name { get; set; }
-
-            /// <summary>
-            /// Gets or sets the value.
-            /// </summary>
-            /// <value>
-            /// The value.
-            /// </value>
-            public string Value { get; set; }
-
-            /// <summary>
-            /// Initializes a new instance of the <see cref="UserPreference"/> class.
-            /// </summary>
-            /// <param name="key">The key.</param>
-            /// <param name="name">The name.</param>
-            /// <param name="value">The value.</param>
-            public UserPreference( string key, string name, string value )
-            {
-                Key = key;
-                Name = name;
-                Value = value;
-            }
-        }
+        
     }
 }

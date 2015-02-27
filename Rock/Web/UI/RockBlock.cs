@@ -889,14 +889,40 @@ namespace Rock.Web.UI
         }
 
         /// <summary>
+        /// Gets the preferences for the current user where the key begins with the specified value.
+        /// </summary>
+        /// <param name="keyPrefix">A <see cref="System.String"/> representing the key preference. Any user preference
+        /// for the current user that begins with this value will be returned.</param>
+        /// <returns>A list of UserPreference that contains all user preferences for the current 
+        /// user that begins with the key prefix.  Each UserPreference includes 
+        /// a key <see cref="System.String"/> that represents the user preference key, a name, and a value <see cref="System.String"/> that 
+        /// represents the user preference value. If no preferences are found, an empty dictionary will be returned.</returns>
+        public List<UserPreference> GetUserPreferenceList( string keyPrefix )
+        {
+            return RockPage.GetUserPreferenceList( keyPrefix );
+        }
+
+        /// <summary>
         /// Sets a user preference for the current user with the specified key and value.
         /// </summary>
         /// <param name="key">A <see cref="System.String"/> that represents the key value that identifies the 
         /// user preference.</param>
         /// <param name="value">A <see cref="System.String"/> that represents the value of the user preference.</param>
+        [Obsolete("Use SetUserPrefence(key, name, value) instead")]
         public void SetUserPreference( string key, string value )
         {
-            RockPage.SetUserPreference( key, value );
+            SetUserPreference( key, key, value );
+        }
+
+        /// <summary>
+        /// Sets the user preference.
+        /// </summary>
+        /// <param name="key">The key.</param>
+        /// <param name="name">The name.</param>
+        /// <param name="value">The value.</param>
+        public void SetUserPreference( string key, string name, string value )
+        {
+            RockPage.SetUserPreference( key, name, value );
         }
 
         #endregion

@@ -821,12 +821,25 @@ namespace Rock.Model
         #region User Preferences
 
         /// <summary>
+        /// Saves the user preference.
+        /// </summary>
+        /// <param name="person">The person.</param>
+        /// <param name="key">The key.</param>
+        /// <param name="value">The value.</param>
+        [Obsolete( "Use SaveUserPreference(person, key, name, value) instead" )]
+        public static void SaveUserPreference( Person person, string key, string value )
+        {
+            SaveUserPreference( person, key, key, value );
+        }
+
+        /// <summary>
         /// Saves a <see cref="Rock.Model.Person">Person's</see> user preference setting by key.
         /// </summary>
-        /// <param name="person">The <see cref="Rock.Model.Person"/> who the preference value belongs to.</param>
-        /// <param name="key">A <see cref="System.String"/> representing the key (name) of the preference setting.</param>
+        /// <param name="person">The <see cref="Rock.Model.Person" /> who the preference value belongs to.</param>
+        /// <param name="key">A <see cref="System.String" /> representing the key (name) of the preference setting.</param>
+        /// <param name="name">The name.</param>
         /// <param name="value">The value.</param>
-        public static void SaveUserPreference( Person person, string key, string value )
+        public static void SaveUserPreference( Person person, string key, string name, string value )        
         {
             int? PersonEntityTypeId = Rock.Web.Cache.EntityTypeCache.Read( Person.USER_VALUE_ENTITY ).Id;
 
@@ -856,6 +869,11 @@ namespace Rock.Model
 
                 attributeService.Add( attribute );
                 rockContext.SaveChanges();
+            }
+
+            if (attribute.Name != name)
+            {
+                attribute.Name = name;
             }
 
             var attributeValueService = new Model.AttributeValueService( rockContext );
@@ -918,9 +936,19 @@ namespace Rock.Model
         /// <returns>A dictionary containing all of the <see cref="Rock.Model.Person">Person's</see> user preference settings.</returns>
         public static Dictionary<string, string> GetUserPreferences( Person person )
         {
+            return PersonService.GetUserPreferenceList( person ).ToDictionary( k => k.Key, v => v.Value );
+        }
+
+        /// <summary>
+        /// Returns all of the user preference settings for a <see cref="Rock.Model.Person"/>.
+        /// </summary>
+        /// <param name="person">The <see cref="Rock.Model.Person"/> to retrieve the user preference settings for.</param>
+        /// <returns>A list containing all of the <see cref="Rock.Model.Person">Person's</see> user preference settings.</returns>
+        public static List<UserPreference> GetUserPreferenceList( Person person )
+        {
             int? PersonEntityTypeId = Rock.Web.Cache.EntityTypeCache.Read( Person.USER_VALUE_ENTITY ).Id;
 
-            var values = new Dictionary<string, string>();
+            var values = new List<UserPreference>();
 
             var rockContext = new Rock.Data.RockContext();
             foreach ( var attributeValue in new Model.AttributeValueService( rockContext ).Queryable()
@@ -930,13 +958,55 @@ namespace Rock.Model
                     ( v.Attribute.EntityTypeQualifierValue == null || v.Attribute.EntityTypeQualifierValue == string.Empty ) &&
                     v.EntityId == person.Id ) )
             {
-                values.Add(attributeValue.Attribute.Key, attributeValue.Value);
+                values.Add( new UserPreference(attributeValue.Attribute.Key, attributeValue.Attribute.Name, attributeValue.Value) );
             }
 
             return values;
         }
 
         #endregion
+    }
 
+    /// <summary>
+    /// Helper class for user preferences
+    /// </summary>
+    public class UserPreference
+    {
+        /// <summary>
+        /// Gets or sets the key.
+        /// </summary>
+        /// <value>
+        /// The key.
+        /// </value>
+        public string Key { get; set; }
+
+        /// <summary>
+        /// Gets or sets the name.
+        /// </summary>
+        /// <value>
+        /// The name.
+        /// </value>
+        public string Name { get; set; }
+
+        /// <summary>
+        /// Gets or sets the value.
+        /// </summary>
+        /// <value>
+        /// The value.
+        /// </value>
+        public string Value { get; set; }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="UserPreference"/> class.
+        /// </summary>
+        /// <param name="key">The key.</param>
+        /// <param name="name">The name.</param>
+        /// <param name="value">The value.</param>
+        public UserPreference( string key, string name, string value )
+        {
+            Key = key;
+            Name = name;
+            Value = value;
+        }
     }
 }

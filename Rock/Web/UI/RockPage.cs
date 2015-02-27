@@ -2053,7 +2053,7 @@ namespace Rock.Web.UI
             var values = SessionUserPreferences();
             if ( values.ContainsKey( key ) )
             {
-                return values[key];
+                return values[key].Value;
             }
 
             return string.Empty;
@@ -2074,7 +2074,28 @@ namespace Rock.Web.UI
             var values = SessionUserPreferences();
             foreach ( var key in values.Where( v => v.Key.StartsWith( keyPrefix ) ) )
             {
-                selectedValues.Add( key.Key, key.Value );
+                selectedValues.Add( key.Key, key.Value.Value );
+            }
+
+            return selectedValues;
+        }
+
+        /// <summary>
+        /// Returns the preference values for the current user that start with a given key.
+        /// </summary>
+        /// <param name="keyPrefix">A <see cref="System.String"/> representing the key prefix. Preference values, for the current user, with a key that begins with this value will be included.</param>
+        /// <returns>A <see cref="System.Collections.Generic.Dictionary{String,String}"/> containing  the current user's preference values containing a key that begins with the specified value. 
+        /// Each <see cref="System.Collections.Generic.KeyValuePair{String,String}"/> contains a key that represents the user preference key and a value that contains the user preference value associated 
+        /// with that key.
+        /// </returns>
+        public List<UserPreference> GetUserPreferenceList( string keyPrefix )
+        {
+            var selectedValues = new List<UserPreference>();
+
+            var values = SessionUserPreferences();
+            foreach ( var key in values.Where( v => v.Key.StartsWith( keyPrefix ) ) )
+            {
+                selectedValues.Add( key.Value );
             }
 
             return selectedValues;
@@ -2086,21 +2107,34 @@ namespace Rock.Web.UI
         /// </summary>
         /// <param name="key">A <see cref="System.String"/> representing the name of the key.</param>
         /// <param name="value">A <see cref="System.String"/> representing the preference value.</param>
+        [Obsolete("Use SetUserPrefence(key, name, value) instead")]
         public void SetUserPreference( string key, string value )
+        {
+            SetUserPreference( key, key, value );
+        }
+
+        /// <summary>
+        /// Sets the user preference.
+        /// </summary>
+        /// <param name="key">The key.</param>
+        /// <param name="name">The name.</param>
+        /// <param name="value">The value.</param>
+        public void SetUserPreference( string key, string name, string value )
         {
             var sessionValues = SessionUserPreferences();
             if ( sessionValues.ContainsKey( key ) )
             {
-                sessionValues[key] = value;
+                sessionValues[key].Value = value;
+                sessionValues[key].Name = name;
             }
             else
             {
-                sessionValues.Add( key, value );
+                sessionValues.Add( key, new UserPreference(key, name, value) );
             }
 
             if ( CurrentPerson != null )
             {
-                PersonService.SaveUserPreference( CurrentPerson, key, value );
+                PersonService.SaveUserPreference( CurrentPerson, key, name, value );
             }
         }
 
@@ -2111,22 +2145,23 @@ namespace Rock.Web.UI
         /// </summary>
         /// <returns>A <see cref="System.Collections.Generic.Dictionary{String, List}"/> containing the user preferences 
         /// for the current user. If the current user is anonymous or unknown an empty dictionary will be returned.</returns>
-        private Dictionary<string, string> SessionUserPreferences()
+        private Dictionary<string, UserPreference> SessionUserPreferences()
         {
             string sessionKey = string.Format( "{0}_{1}",
                 Person.USER_VALUE_ENTITY, CurrentPerson != null ? CurrentPerson.Id : 0 );
 
-            var userPreferences = Session[sessionKey] as Dictionary<string, string>;
+            var userPreferences = Session[sessionKey] as Dictionary<string, UserPreference>;
             if ( userPreferences == null )
             {
                 if ( CurrentPerson != null )
                 {
-                    userPreferences = PersonService.GetUserPreferences( CurrentPerson );
+                    userPreferences = PersonService.GetUserPreferenceList( CurrentPerson ).ToDictionary( k => k.Key, v => v );
                 }
                 else
                 {
-                    userPreferences = new Dictionary<string, string>();
+                    userPreferences = new Dictionary<string, UserPreference>();
                 }
+                
                 Session[sessionKey] = userPreferences;
             }
 
