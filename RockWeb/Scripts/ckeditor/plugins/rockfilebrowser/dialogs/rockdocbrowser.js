@@ -30,10 +30,20 @@
         onOk: function (sender) {
             var fileResult = $('#iframe-rockdocbrowser_' + editor.id).contents().find('.js-filebrowser-result input[type=hidden]').val();
             if (fileResult) {
-                // iframe returns the result in the format "href,text"
+                // iframe returns the result in the format "href,text,mimetype"
                 var resultParts = fileResult.split(',');
-                var imageHtml = '<a href="' + Rock.settings.get('baseUrl') + resultParts[0] + '" >' + resultParts[1] + '</a>';
-                editor.insertHtml(imageHtml);
+                
+                if (resultParts[2].startsWith('video/')) {
+                    var videoHtml = '<video src="';
+                    videoHtml += Rock.settings.get('baseUrl') + resultParts[0] + '" ';
+                    videoHtml += ' type="' + resultParts[3] + '" controls="controls" style="width:100%;height:100%;" width="100%" height="100%" preload="auto" ></video>';
+                    videoHtml += " <script>Rock.controls.mediaPlayer.initialize();</script> ";
+                    editor.insertHtml(videoHtml);
+                }
+                else {
+                    var imageHtml = '<a href="' + Rock.settings.get('baseUrl') + resultParts[0] + '" >' + resultParts[1] + '</a>';
+                    editor.insertHtml(imageHtml);
+                }
             }
         }
     };

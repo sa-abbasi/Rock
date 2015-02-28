@@ -367,7 +367,21 @@ namespace RockWeb.Blocks.Utility
         {
             string rootFolder = GetRootFolderPath();
             string imageUrl = rootFolder.TrimEnd( '\\', '/' ) + '/' + relativeFilePath.TrimStart( '\\', '/' ).Replace( '\\', '/' );
-            string result = string.Format( "{0},{1}", imageUrl.TrimStart( '~', '/', '\\' ), Path.GetFileName( relativeFilePath ) );
+
+            string mimeType = string.Empty;
+            try
+            {
+                string physicalRootFolder = this.MapPath( rootFolder );
+                string physicalFilePath = Path.Combine( physicalRootFolder, relativeFilePath.TrimStart( '\\', '/' ) );
+
+                mimeType = System.Web.MimeMapping.GetMimeMapping( physicalFilePath );
+            }
+            catch
+            {
+                // ignore if getting mimetype didn't work
+            }
+
+            string result = string.Format( "{0},{1},{2}", imageUrl.TrimStart( '~', '/', '\\' ), Path.GetFileName( relativeFilePath ), mimeType );
             return result;
         }
 
