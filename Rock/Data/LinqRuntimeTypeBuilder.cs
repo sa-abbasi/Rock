@@ -59,8 +59,9 @@ namespace Rock.Data
         /// Gets the type key which can be used to look in our cache of builtTypes
         /// </summary>
         /// <param name="fields">The fields.</param>
+        /// <param name="parentType">Type of the parent.</param>
         /// <returns></returns>
-        private static string GetTypeKey( Dictionary<string, Type> fields )
+        private static string GetTypeKey( Dictionary<string, Type> fields, Type parentType )
         {
             // class name must be unique, but can't be more than 1024 chars long.  Show generate a hash using the Fields
             string key = string.Empty;
@@ -69,17 +70,19 @@ namespace Rock.Data
                 key += field.Key + ";" + field.Value.Name + ";";
             }
             
-            return "LinqRuntimeType" + key.GetHashCode();
+            return "LinqRuntimeType" + parentType.Name + key.GetHashCode();
         }
 
         /// <summary>
-        /// Creates a Type from a list of fields and their type then returns that Type 
+        /// Creates a Type from a list of fields and their type then returns that Type
         /// </summary>
         /// <param name="fields">The fields.</param>
+        /// <param name="parentType">Type of the parent.</param>
         /// <returns></returns>
         /// <exception cref="System.ArgumentNullException">fields</exception>
         /// <exception cref="System.ArgumentOutOfRangeException">fields;fields must have at least 1 field definition</exception>
-        public static Type GetDynamicType( Dictionary<string, Type> fields )
+        /// <exception cref="System.Exception">Field names must start with an uppercase character</exception>
+        public static Type GetDynamicType( Dictionary<string, Type> fields, Type parentType )
         {
             if ( null == fields )
             {
@@ -93,17 +96,23 @@ namespace Rock.Data
 
             try
             {
-                string className = GetTypeKey( fields );
+                string className = GetTypeKey( fields, parentType );
 
                 if ( builtTypes.ContainsKey( className ) )
                 {
                     return builtTypes[className];
                 }
 
-                TypeBuilder typeBuilder = moduleBuilder.DefineType( className, TypeAttributes.Public | TypeAttributes.Class | TypeAttributes.Serializable );
+                TypeBuilder typeBuilder = moduleBuilder.DefineType( className, TypeAttributes.Public | TypeAttributes.Class | TypeAttributes.Serializable, parentType );
 
                 foreach ( var field in fields )
                 {
+                    if ( field.Key == "Id" )
+                    {
+                        // since we are Inheriting from IEntity, skip "Id"
+                        continue;
+                    }
+                    
                     // make firstchar of fieldName lowercase
                     string fieldName = field.Key.ToLower()[0] + field.Key.Substring( 1 );
                     if ( fieldName == field.Key )
@@ -145,20 +154,22 @@ namespace Rock.Data
         /// Gets the type key which can be used to look in our cache of builtTypes
         /// </summary>
         /// <param name="fields">The fields.</param>
+        /// <param name="parentType">Type of the parent.</param>
         /// <returns></returns>
-        private static string GetTypeKey( IEnumerable<PropertyInfo> fields )
+        private static string GetTypeKey( IEnumerable<PropertyInfo> fields, Type parentType )
         {
-            return GetTypeKey( fields.ToDictionary( f => f.Name, f => f.PropertyType ) );
+            return GetTypeKey( fields.ToDictionary( f => f.Name, f => f.PropertyType ), parentType );
         }
 
         /// <summary>
         /// Creates a Type from a list of field PropertyInfos then returns that type
         /// </summary>
         /// <param name="fields">The fields.</param>
+        /// <param name="parentType">Type of the parent.</param>
         /// <returns></returns>
-        public static Type GetDynamicType( IEnumerable<PropertyInfo> fields )
+        public static Type GetDynamicType( IEnumerable<PropertyInfo> fields, Type parentType )
         {
-            return GetDynamicType( fields.ToDictionary( f => f.Name, f => f.PropertyType ) );
+            return GetDynamicType( fields.ToDictionary( f => f.Name, f => f.PropertyType ), parentType );
         }
     }
 }

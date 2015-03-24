@@ -1781,43 +1781,56 @@ namespace Rock.Web.UI.Controls
         /// <returns></returns>
         private int? GetEntitySetFromGrid( EventArgs e )
         {
-            if ( !string.IsNullOrWhiteSpace( this.PersonIdField ) )
+            var dataSourceEntityType = this.GetDataSourceEntityType();
+            Type entityType = null;
+            if ( typeof( IEntity ).IsAssignableFrom( dataSourceEntityType ) )
             {
-                return GetPersonEntitySet( e );
-            }
-            else
-            {
-                var entityType = this.GetDataSourceEntityType();
-                var entitySet = new Rock.Model.EntitySet();
-                entitySet.EntityTypeId = Rock.Web.Cache.EntityTypeCache.Read( entityType ).Id;
-                entitySet.ExpireDateTime = RockDateTime.Now.AddMinutes( 5 );
-
-                var selectedKeys = this.SelectedKeys.Select( a => a as int? ).Where( a => a.HasValue ).Select( a => a.Value ).Distinct();
-                if ( selectedKeys == null || !selectedKeys.Any() )
+                if ( dataSourceEntityType.Assembly.IsDynamic )
                 {
-                    selectedKeys = ( (IList)this.DataSource ).OfType<IEntity>().Select( a => a.Id ).Distinct();
+                    // if the grid datasource is Dynamic (for example, from Rock.Data.LinqRuntimeTypeBuilder, let's find out the base type
+                    entityType = dataSourceEntityType.BaseType;
                 }
-
-                foreach ( var key in selectedKeys )
+                else
                 {
-                    try
-                    {
-                        var item = new Rock.Model.EntitySetItem();
-                        item.EntityId = key;
-                        entitySet.Items.Add( item );
-                    }
-                    catch { }
-                }
-
-                if ( entitySet.Items.Any() )
-                {
-                    var rockContext = new RockContext();
-                    var service = new Rock.Model.EntitySetService( rockContext );
-                    service.Add( entitySet );
-                    rockContext.SaveChanges();
-                    return entitySet.Id;
+                    entityType = dataSourceEntityType;
                 }
             }
+
+            if ( entityType == null )
+            {
+                throw new Exception( "Unable to determine EntityType" );
+            }
+
+            var entitySet = new Rock.Model.EntitySet();
+            entitySet.EntityTypeId = Rock.Web.Cache.EntityTypeCache.Read( entityType ).Id;
+            entitySet.ExpireDateTime = RockDateTime.Now.AddMinutes( 5 );
+
+            var selectedKeys = this.SelectedKeys.Select( a => a as int? ).Where( a => a.HasValue ).Select( a => a.Value ).Distinct();
+            if ( selectedKeys == null || !selectedKeys.Any() )
+            {
+                selectedKeys = ( (IList)this.DataSource ).OfType<IEntity>().Select( a => a.Id ).Distinct();
+            }
+
+            foreach ( var key in selectedKeys )
+            {
+                try
+                {
+                    var item = new Rock.Model.EntitySetItem();
+                    item.EntityId = key;
+                    entitySet.Items.Add( item );
+                }
+                catch { }
+            }
+
+            if ( entitySet.Items.Any() )
+            {
+                var rockContext = new RockContext();
+                var service = new Rock.Model.EntitySetService( rockContext );
+                service.Add( entitySet );
+                rockContext.SaveChanges();
+                return entitySet.Id;
+            }
+
 
             return null;
         }

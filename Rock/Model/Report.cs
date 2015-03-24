@@ -246,12 +246,12 @@ namespace Rock.Model
                         return null;
                     }
 
-                    Type dynamicType = LinqRuntimeTypeBuilder.GetDynamicType( dynamicFields );
+                    Type dynamicType = LinqRuntimeTypeBuilder.GetDynamicType( dynamicFields, entityType );
                     ConstructorInfo methodFromHandle = dynamicType.GetConstructor( Type.EmptyTypes );
 
                     // Bind the dynamic fields to their expressions
                     var bindings = new List<MemberAssignment>();
-                    bindings.Add( Expression.Bind( dynamicType.GetField( "id" ), idExpression ) );
+                    bindings.Add( Expression.Bind( dynamicType.GetProperty( "Id" ), idExpression ) );
 
                     foreach ( var f in entityFields )
                     {
